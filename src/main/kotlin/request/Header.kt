@@ -20,8 +20,8 @@ data class Header(
 	val nscount: Int,
 	val arcount: Int
 ) {
-	fun toByteArray(): ByteArray {
-		return id.toByteArray().sliceArray(2..3) + byteArrayOf(
+	fun toByteArray(): ByteArray =
+		id.toByteArray().sliceArray(2..3) + byteArrayOf(
 			mergeBits(listOf(qr, opcode, aa, tc, rd), listOf(1, 4, 1, 1, 1)),
 			mergeBits(listOf(ra, z, rcode), listOf(1, 3, 4)),
 		) +
@@ -29,7 +29,7 @@ data class Header(
 			ancount.toByteArray().sliceArray(2..3) +
 			nscount.toByteArray().sliceArray(2..3) +
 			arcount.toByteArray().sliceArray(2..3)
-	}
+
 
 	companion object {
 		fun parseHeader(bytes: ByteArray): Header {
@@ -37,10 +37,10 @@ data class Header(
 			val id = bytes.toIntMultiple(0, 1)
 			val (qr, opcode, aa, tc, rd) = bytes[2].split(listOf(1, 4, 1, 1, 1))
 			val (ra, z, rcode) = bytes[3].split(listOf(1, 3, 4))
-			val qdcount = bytes.toIntMultiple(3, 4)
-			val ancount = bytes.toIntMultiple(5, 6)
-			val nscount = bytes.toIntMultiple(7, 8)
-			val arcount = bytes.toIntMultiple(9, 10)
+			val qdcount = bytes.toIntMultiple(4, 5)
+			val ancount = bytes.toIntMultiple(6, 7)
+			val nscount = bytes.toIntMultiple(8, 9)
+			val arcount = bytes.toIntMultiple(10, 11)
 
 			return Header(id, qr, opcode, aa, tc, rd, ra, z, rcode, qdcount, ancount, nscount, arcount)
 		}
