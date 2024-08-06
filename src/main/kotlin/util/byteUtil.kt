@@ -8,7 +8,7 @@ fun Byte.split(size: List<Int>): List<Int> {
 		.windowed(size = 2, step = 1)
 
 	return position.map {
-		(a, b) -> captureBit(this, a, b - a + 1)
+		(a, b) -> captureBit(this, a, b - a)
 	}
 }
 
@@ -17,7 +17,7 @@ fun Int.toByteArray(): ByteArray =
 
 fun ByteArray.toIntMultiple(start: Int, end: Int): Int =
 	(start..end).fold(0) {
-		before, after -> (before shl 8) or this[after].toInt()
+		before, after -> ((before and 0xFF) shl 8) or (this[after].toInt() and 0xFF)
 	}
 
 fun mergeBits(numbers: List<Int>, size: List<Int>): Byte =
@@ -26,6 +26,6 @@ fun mergeBits(numbers: List<Int>, size: List<Int>): Byte =
 	}.toByte()
 
 private fun captureBit(byte: Byte, startBit: Int, bitCount: Int): Int {
-	val mask = ((1 shl bitCount) - 1) shl startBit
-	return (byte.toInt() and mask) shr startBit
+	val mask = ((1 shl bitCount) - 1) shl (8 - startBit - bitCount)
+	return (byte.toInt() and mask) shr (8 - startBit - bitCount)
 }

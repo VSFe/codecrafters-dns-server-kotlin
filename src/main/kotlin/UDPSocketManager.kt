@@ -22,7 +22,7 @@ object UDPSocketManager {
 		val headerBytes = byteArray.sliceArray(0..11)
 		val header = Header.parseHeader(headerBytes)
 		val question = parseQuestion(byteArray.drop(12))
-		val responseHeader = Header(1234, 1, 0, 0, 0, 0, 0, 0, 0, header.qdcount, 1, 0, 0)
+		val responseHeader = Header(header.id, 1, header.opcode, 0, 0, header.rd, 0, 0, if (header.opcode == 0) 0 else 4, header.qdcount, 1, 0, 0)
 		val responseAnswer = getAnswer(question)
 
 		return Response(responseHeader, listOf(question), listOf(responseAnswer))
