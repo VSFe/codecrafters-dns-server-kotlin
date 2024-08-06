@@ -1,3 +1,4 @@
+import model.Answer
 import request.Header
 import request.Question
 import util.toIntMultiple
@@ -21,9 +22,10 @@ object UDPSocketManager {
 		val headerBytes = byteArray.sliceArray(0..11)
 		val header = Header.parseHeader(headerBytes)
 		val question = parseQuestion(byteArray.drop(12))
-		val responseHeader = Header(1234, 1, 0, 0, 0, 0, 0, 0, 0, header.qdcount, 0, 0, 0)
+		val responseHeader = Header(1234, 1, 0, 0, 0, 0, 0, 0, 0, header.qdcount, 1, 0, 0)
+		val responseAnswer = getAnswer(question)
 
-		return Response(responseHeader, listOf(question))
+		return Response(responseHeader, listOf(question), listOf(responseAnswer))
 	}
 
 	private fun parseQuestion(bytes: List<Byte>): Question {
@@ -44,4 +46,7 @@ object UDPSocketManager {
 
 		return Question(name, type, questionClass)
 	}
+
+	private fun getAnswer(question: Question): Answer =
+		Answer(question.name, 1, 1, 60, 4, byteArrayOf(8, 8, 8, 8))
 }
