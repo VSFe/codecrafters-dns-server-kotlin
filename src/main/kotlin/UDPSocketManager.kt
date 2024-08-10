@@ -1,6 +1,7 @@
 import model.Answer
 import request.Header
 import request.Question
+import util.captureBit
 import util.toIntMultiple
 import java.net.DatagramPacket
 import java.net.DatagramSocket
@@ -21,16 +22,33 @@ object UDPSocketManager {
 	private fun processInner(byteArray: ByteArray): Response {
 		val headerBytes = byteArray.sliceArray(0..11)
 		val header = Header.parseHeader(headerBytes)
-		val question = parseQuestion(byteArray.drop(12))
-		val responseHeader = Header(header.id, 1, header.opcode, 0, 0, header.rd, 0, 0, if (header.opcode == 0) 0 else 4, header.qdcount, 1, 0, 0)
-		val responseAnswer = getAnswer(question)
+		var remainByteArray = byteArray.drop(12)
+		val questions = mutableListOf<Question>()
+		val answers = mutableListOf<Answer>()
 
-		return Response(responseHeader, listOf(question), listOf(responseAnswer))
+		(0 until header.qdcount)
+			.map {
+				val result = parseQuestion(remainByteArray)
+				val question = if(questions.isEmpty()) result.first!! else questions.last()
+				remainByteArray = result.second
+				val responseAnswer = getAnswer(question)
+
+				questions.add(question)
+				answers.add(responseAnswer)
+			}
+
+		val responseHeader = Header(header.id, 1, header.opcode, 0, 0, header.rd, 0, 0, if (header.opcode == 0) 0 else 4, header.qdcount, header.qdcount, 0, 0)
+
+		return Response(responseHeader, questions, answers)
 	}
 
-	private fun parseQuestion(bytes: List<Byte>): Question {
+	private fun parseQuestion(bytes: List<Byte>): Pair<Question?, List<Byte>> =
+		if (!checkCompressed(bytes)) parseUncompressedQuestion(bytes) else Pair(null, bytes.drop(2))
+
+	private fun parseUncompressedQuestion(bytes: List<Byte>): Pair<Question, List<Byte>> {
 		var byteListHolder = bytes
 		val result = mutableListOf<String>()
+
 		while (true) {
 			val size = byteListHolder[0].toInt()
 			if (size == 0) break
@@ -44,9 +62,15 @@ object UDPSocketManager {
 		val type = byteListHolder.toByteArray().toIntMultiple(1, 2)
 		val questionClass = byteListHolder.toByteArray().toIntMultiple(3, 4)
 
-		return Question(name, type, questionClass)
+		return Pair(Question(name, type, questionClass), byteListHolder.drop(9))
 	}
 
 	private fun getAnswer(question: Question): Answer =
 		Answer(question.name, 1, 1, 60, 4, byteArrayOf(8, 8, 8, 8))
+
+	private fun checkCompressed(byteList: List<Byte>): Boolean {
+		println(byteList.first())
+		println(captureBit(byteList[0], 0, 2))
+		return captureBit(byteList[0], 0, 2) == 3
+	}
 }
